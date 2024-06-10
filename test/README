@@ -1,0 +1,46 @@
+// works in sloeber
+void Actuator::start() {
+	int calculatedDuty = getCalculatedDuty();
+	char connectorType = connector.getType();
+	switch (connectorType) {
+	case 'T': //Stepper_Driver with two pins
+		dWrite(connector.getEnablePin(), LOW); // this will put pin 1 in
+		break;
+	case 'H': //H bridge with two pins for 2 directions.
+		dWrite(connector.getEnablePin(), LOW); //enable disables on HIGH
+		break;
+	case 'O': //one pin
+		break;
+	default:
+		Serial.print("UNKNOWN CONNECTOR TYPE ERROR for connector type");
+		Errors::raiseUserInputAlarm(String("Error. Unknown connector TYPE:") + String(connectorType));
+		return;
+	}
+	ledcAttachPin(connector.getPwmPin(), channel);
+	switch (type) {
+	case 'L': //LED
+		break;
+	case BUZZER_TYPE: //Buzz
+		ledcWriteNote(channel, note_t::NOTE_E, 6);
+		break;
+	case ROCKER_TYPE: //Rocker
+		ledcSetup(channel, frequency, RESOLUTION);
+		// attach the channel to the GPIO2 to be controlled
+		calculatedDuty = STEPPER_DUTY_CYCLE; // overwrite any external value
+		dWrite(connector.getEnablePin(), LOW); //enable disables on HIGH
+		break;
+	case 'A': //Air
+	case 'C': //Circulation
+	case 'H': //Heater
+		break;
+	default:
+		Serial.print("UNKNOWN TYPE ERROR:");
+		Serial.println(type);
+		return;
+	}
+	ledcWrite(channel, calculatedDuty);
+	Serial.print("in Start at ledcWrite(channel, calculatedDuty);");
+	Serial.println(calculatedDuty);
+	this->started=true;
+	printInfo();
+}
